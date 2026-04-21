@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>编译原理完整知识库</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+:root{
+--bg:#f1f5f9;--card:#ffffff;--primary:#1e40af;--primary-light:#dbeafe;--primary-dark:#1e3a8a;
+--accent:#0f766e;--accent-light:#ccfbf1;--text:#0f172a;--text-secondary:#475569;
+--border:#cbd5e1;--shadow:0 1px 3px rgba(0,0,0,.08),0 4px 12px rgba(0,0,0,.04);--radius:10px;
+--success:#059669;--warning:#d97706;--danger:#dc2626;--purple:#7c3aed;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);line-height:1.75;font-size:15px}
+a{color:var(--primary);text-decoration:none}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:4px}
+
+/* Header */
+.site-header{background:linear-gradient(135deg,var(--primary-dark) 0%,var(--primary) 50%,#3b82f6 100%);color:#fff;padding:28px 0;position:sticky;top:0;z-index:100;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+.site-header .container{max-width:1400px;margin:0 auto;padding:0 24px;display:flex;justify-content:space-between;align-items:center}
+.site-header h1{font-size:1.6rem;font-weight:700;letter-spacing:-.3px}
+.site-header .subtitle{font-size:.85rem;opacity:.85;margin-top:2px}
+.top-nav{display:flex;gap:6px}
+.top-nav a{padding:7px 16px;border-radius:20px;font-size:.85rem;font-weight:600;color:rgba(255,255,255,.8);transition:all .2s;cursor:pointer;border:none;background:transparent}
+.top-nav a:hover,.top-nav a.active{background:rgba(255,255,255,.2);color:#fff}
+
+/* Layout */
+.main-layout{max-width:1400px;margin:0 auto;padding:20px 24px;display:grid;grid-template-columns:260px 1fr;gap:20px;align-items:start}
+
+/* Sidebar */
+.sidebar{position:sticky;top:92px;max-height:calc(100vh - 112px);overflow-y:auto;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+.sidebar-title{font-size:.8rem;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:.5px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.chapter-group{margin-bottom:12px}
+.chapter-header{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;font-weight:700;font-size:.9rem;transition:background .2s;color:var(--primary)}
+.chapter-header:hover{background:var(--primary-light)}
+.chapter-header .chevron{font-size:.7rem;transition:transform .2s}
+.chapter-header.expanded .chevron{transform:rotate(90deg)}
+.chapter-header .ch-num{width:22px;height:22px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.7rem;flex-shrink:0}
+.subnav{list-style:none;padding-left:8px;display:none;margin-top:2px}
+.subnav.open{display:block}
+.subnav li{padding:6px 10px 6px 28px;border-radius:6px;cursor:pointer;font-size:.82rem;color:var(--text-secondary);transition:all .15s;position:relative}
+.subnav li:hover{background:var(--primary-light);color:var(--primary)}
+.subnav li.active{background:var(--primary);color:#fff;font-weight:600}
+.subnav li::before{content:'';position:absolute;left:12px;top:50%;transform:translateY(-50%);width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.4}
+
+/* Content */
+.content-area{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);min-height:calc(100vh - 130px);overflow:hidden}
+.content-inner{padding:28px 32px;max-width:900px}
+.breadcrumb{display:flex;gap:6px;align-items:center;font-size:.82rem;color:var(--text-secondary);margin-bottom:16px;flex-wrap:wrap}
+.breadcrumb span{cursor:pointer;transition:color .2s}
+.breadcrumb span:hover{color:var(--primary)}
+.breadcrumb .sep{opacity:.4}
+.page-title{font-size:1.5rem;font-weight:700;margin-bottom:4px;color:var(--text)}
+.page-desc{font-size:.9rem;color:var(--text-secondary);margin-bottom:24px}
+
+/* Graph View */
+.graph-view{padding:20px}
+#graph-container{width:100%;height:620px;border-radius:var(--radius);background:#f8fafc;border:1px solid var(--border);position:relative;overflow:hidden}
+#graph-container svg{width:100%;height:100%}
+.graph-overlay{position:absolute;top:12px;right:12px;background:rgba(255,255,255,.96);padding:12px 14px;border-radius:8px;font-size:.78rem;box-shadow:var(--shadow);backdrop-filter:blur(6px);max-width:180px}
+.graph-overlay .legend-title{font-weight:700;margin-bottom:6px;font-size:.8rem}
+.legend-row{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.legend-dot{width:9px;height:9px;border-radius:50%}
+.graph-hint{position:absolute;bottom:12px;left:12px;background:rgba(255,255,255,.9);padding:6px 12px;border-radius:6px;font-size:.75rem;color:var(--text-secondary);box-shadow:var(--shadow)}
+
+/* Knowledge Cards */
+.kp-section{margin-bottom:28px}
+.kp-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid var(--primary-light)}
+.kp-header .icon{width:32px;height:32px;border-radius:8px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.kp-header h2{font-size:1.15rem;font-weight:700;color:var(--primary-dark)}
+.kp-card{border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:14px;background:#fff;transition:box-shadow .2s}
+.kp-card:hover{box-shadow:var(--shadow)}
+.kp-card h3{font-size:1rem;font-weight:700;color:var(--primary-dark);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.kp-card h4{font-size:.92rem;font-weight:700;color:var(--accent);margin:12px 0 6px}
+.kp-card p{margin-bottom:8px;color:var(--text)}
+.kp-card ul,.kp-card ol{padding-left:22px;margin-bottom:8px;color:var(--text)}
+.kp-card li{margin-bottom:3px}
+.kp-card code{background:#f1f5f9;padding:2px 6px;border-radius:4px;font-family:'Consolas','Monaco',monospace;font-size:.85em;color:var(--danger)}
+.kp-card pre{background:#f8fafc;padding:12px 16px;border-radius:8px;font-family:'Consolas','Monaco',monospace;font-size:.82rem;overflow-x:auto;border:1px solid var(--border);line-height:1.6;color:var(--text)}
+
+/* Special boxes */
+.def-box{background:var(--primary-light);border-left:4px solid var(--primary);border-radius:0 8px 8px 0;padding:14px 16px;margin:12px 0}
+.def-box .def-label{font-weight:700;color:var(--primary);font-size:.8rem;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px}
+.important-box{background:#fef9c3;border-left:4px solid var(--warning);border-radius:0 8px 8px 0;padding:14px 16px;margin:12px 0}
+.important-box .imp-label{font-weight:700;color:var(--warning);font-size:.8rem;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px}
+.theorem-box{background:var(--accent-light);border-left:4px solid var(--accent);border-radius:0 8px 8px 0;padding:14px 16px;margin:12px 0}
+.theorem-box .thm-label{font-weight:700;color:var(--accent);font-size:.8rem;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px}
+.example-box{background:#fff7ed;border-left:4px solid #ea580c;border-radius:0 8px 8px 0;padding:14px 16px;margin:14px 0}
+.example-box .ex-label{font-weight:700;color:#ea580c;font-size:.8rem;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px}
+.example-box .ex-title{font-weight:700;color:var(--text);margin-bottom:8px;font-size:.95rem}
+.example-box .ex-solution{background:#fff;border-radius:6px;padding:12px 14px;margin-top:10px;border:1px solid #fed7aa}
+.example-box .ex-sol-label{font-weight:700;color:var(--success);font-size:.82rem;margin-bottom:6px}
+.algo-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px 16px;margin:12px 0}
+.algo-box .algo-label{font-weight:700;color:var(--success);font-size:.8rem;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px}
+
+/* Tables */
+.data-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:.88rem}
+.data-table th,.data-table td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)}
+.data-table th{background:#f8fafc;font-weight:700;color:var(--text-secondary);font-size:.82rem}
+.data-table tr:hover td{background:#f8fafc}
+.data-table td{color:var(--text)}
+
+/* Tags */
+.tag{display:inline-block;padding:3px 10px;border-radius:12px;font-size:.75rem;font-weight:600;margin-right:4px;margin-bottom:4px;vertical-align:middle}
+.tag-blue{background:var(--primary-light);color:var(--primary-dark)}
+.tag-green{background:#d1fae5;color:#065f46}
+.tag-orange{background:#fef3c7;color:#92400e}
+.tag-red{background:#fee2e2;color:#991b1b}
+.tag-purple{background:#ede9fe;color:#5b21b6}
+
+/* Flow */
+.flow-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 0}
+.flow-box{padding:8px 14px;border-radius:8px;font-size:.82rem;font-weight:600;text-align:center;min-width:80px}
+.flow-in{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd}
+.flow-proc{background:#fef3c7;color:#92400e;border:1px solid #fcd34d}
+.flow-out{background:#d1fae5;color:#065f46;border:1px solid #86efac}
+.flow-arrow{color:var(--text-secondary);font-size:1.2rem;font-weight:700}
+
+/* Section links */
+.section-anchor{display:block;height:0;visibility:hidden}
+
+/* Node tooltip */
+.node-tooltip{position:absolute;background:rgba(15,23,42,.92);color:#fff;padding:8px 14px;border-radius:8px;font-size:.82rem;pointer-events:none;opacity:0;transition:opacity .2s;z-index:50;max-width:220px;line-height:1.5}
+.node-tooltip.visible{opacity:1}
+
+/* Responsive */
+@media(max-width:960px){
+.main-layout{grid-template-columns:1fr}
+.sidebar{display:none}
+.site-header .container{flex-direction:column;gap:10px}
+}
+@media(max-width:640px){
+.content-inner{padding:18px}
+.top-nav{flex-wrap:wrap;justify-content:center}
+}
+
+/* Print */
+@media print{.site-header,.sidebar{display:none}.main-layout{grid-template-columns:1fr}}
+
+/* Hidden */
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<header class="site-header">
+<div class="container">
+<div>
+<h1>编译原理 · 完整知识库</h1>
+<div class="subtitle">覆盖全部18个PPT课件 | 可交互知识图谱 | 零基础友好</div>
+</div>
+<nav class="top-nav">
+<a onclick="showPage('graph')" id="nav-graph" class="active">知识图谱</a>
+<a onclick="showPage('ch1')" id="nav-ch1">第1章</a>
+<a onclick="showPage('ch3')" id="nav-ch3">第3章</a>
+<a onclick="showPage('ch4')" id="nav-ch4">第4章</a>
+<a onclick="showPage('examples')" id="nav-examples">例题</a>
+</nav>
+</div>
+</header>
+
+<div class="main-layout">
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+<div class="sidebar-title">目录导航</div>
+<div id="sidebar-content"></div>
+</aside>
+
+<!-- Content Area -->
+<main class="content-area" id="content-area">
+<!-- Dynamic content injected here -->
+</main>
+</div>
+
+<div class="node-tooltip" id="tooltip"></div>
+
+<script>
+// ============ NAVIGATION ============
+function showPage(pageId){
+// Update top nav
+document.querySelectorAll('.top-nav a').forEach(a=>a.classList.remove('active'));
+const navEl=document.getElementById('nav-'+pageId);
+if(navEl) navEl.classList.add('active');
+
+// Update sidebar
+document.querySelectorAll('.subnav li').forEach(li=>li.classList.remove('active'));
+
+const area=document.getElementById('content-area');
+if(pageId==='graph'){
+  area.innerHTML=`<div class="graph-view"><div id="graph-container"><svg id="knowledge-graph"></svg><div class="graph-overlay"><div class="legend-title">图例</div><div class="legend-row"><div class="legend-dot" style="background:var(--primary)"></div>核心章节</div><div class="legend-row"><div class="legend-dot" style="background:var(--accent)"></div>关键概念</div><div class="legend-row"><div class="legend-dot" style="background:var(--warning)"></div>算法/方法</div><div class="legend-row"><div class="legend-dot" style="background:var(--danger)"></div>工具/软件</div><div class="legend-row"><div class="legend-dot" style="background:var(--purple)"></div>集合运算</div></div><div class="graph-hint">💡 点击节点查看对应知识点 | 拖拽移动 | 滚轮缩放</div></div></div>`;
+  renderGraph();
+} else if(PAGES[pageId]){
+  area.innerHTML=PAGES[pageId];
+  // Auto-expand sidebar chapter
+  document.querySelectorAll('.chapter-header').forEach(h=>{
+    h.classList.remove('expanded');
+    h.nextElementSibling?.classList.remove('open');
+  });
+  const targetHeader=document.querySelector(`[data-chapter="${pageId}"]`);
+  if(targetHeader){
+    targetHeader.classList.add('expanded');
+    targetHeader.nextElementSibling?.classList.add('open');
+  }
+} else {
+  area.innerHTML='<div class="content-inner"><p>内容加载中...</p></div>';
+}
+window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function showSubpage(pageId,subId){
+showPage(pageId);
+setTimeout(()=>{
+  const el=document.getElementById('sub-'+subId);
+  if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+  document.querySelectorAll('.subnav li').forEach(li=>li.classList.remove('active'));
+  const sli=document.querySelector(`[data-sub="${subId}"]`);
+  if(sli) sli.classList.add('active');
+},50);
+}
+
+// ============ SIDEBAR ============
+const SIDEBAR_DATA=[
+{key:'ch1',title:'第1章 编译概述',items:[
+  {id:'1-1',label:'1.1 编译与解释'},
+  {id:'1-2',label:'1.2 编译五阶段'},
+  {id:'1-3',label:'1.3 前端与后端'},
+  {id:'1-4',label:'1.4 遍与开发'},
+  {id:'1-5',label:'1.5 测试维护'},
+]},
+{key:'ch3',title:'第3章 词法分析',items:[
+  {id:'3-1',label:'3.1 词法分析概述'},
+  {id:'3-2',label:'3.2 正规表达式'},
+  {id:'3-3',label:'3.3 有限自动机'},
+  {id:'3-4',label:'3.4 NFA转DFA'},
+  {id:'3-5',label:'3.5 DFA最小化'},
+  {id:'3-6',label:'3.6 表达式与FA等价'},
+  {id:'3-7',label:'3.7 构造词法分析器'},
+]},
+{key:'ch4',title:'第4章 语法分析',items:[
+  {id:'4-1',label:'4.1 文法概念'},
+  {id:'4-2',label:'4.2 形式定义'},
+  {id:'4-3',label:'4.3 Chomsky分类'},
+  {id:'4-4',label:'4.4 推导与语言'},
+  {id:'4-5',label:'4.5 语法树与二义性'},
+  {id:'4-6',label:'4.6 自上而下分析'},
+  {id:'4-7',label:'4.7 LL(1)分析'},
+  {id:'4-8',label:'4.8 自下而上分析'},
+  {id:'4-9',label:'4.9 LR分析'},
+  {id:'4-10',label:'4.10 错误处理与工具'},
+]},
+{key:'examples',title:'例题解析',items:[
+  {id:'ex-ch3',label:'第3章例题'},
+  {id:'ex-ch4',label:'第4章例题'},
+  {id:'ex-hw',label:'课后作业'},
+]},
+];
+
+function renderSidebar(){
+const container=document.getElementById('sidebar-content');
+container.innerHTML=SIDEBAR_DATA.map(ch=>`
+<div class="chapter-group">
+<div class="chapter-header" data-chapter="${ch.key}" onclick="toggleChapter(this)">
+  <span class="ch-num">${ch.key==='ch1'?'1':ch.key==='ch3'?'3':ch.key==='ch4'?'4':'★'}</span>
+  <span style="flex:1">${ch.title}</span>
+  <span class="chevron">▶</span>
+</div>
+<ul class="subnav" id="nav-${ch.key}">
+  ${ch.items.map(it=>`<li data-sub="${it.id}" onclick="showSubpage('${ch.key}','${it.id}')">${it.label}</li>`).join('')}
+</ul>
+</div>
+`).join('');
+}
+
+function toggleChapter(header){
+const wasExpanded=header.classList.contains('expanded');
+document.querySelectorAll('.chapter-header').forEach(h=>{h.classList.remove('expanded');h.nextElementSibling?.classList.remove('open');});
+if(!wasExpanded){
+  header.classList.add('expanded');
+  header.nextElementSibling?.classList.add('open');
+}
+}
+
+// ============ KNOWLEDGE GRAPH ============
+const GRAPH_NODES=[
+// Chapters
+{id:'ch1',name:'第1章\n编译概述',g:'chapter',r:34,page:'ch1',sub:'1-1'},
+{id:'ch3',name:'第3章\n词法分析',g:'chapter',r:36,page:'ch3',sub:'3-1'},
+{id:'ch4',name:'第4章\n语法分析',g:'chapter',r:36,page:'ch4',sub:'4-1'},
+// Ch1 concepts
+{id:'compiler',name:'编译程序',g:'concept',r:20,page:'ch1',sub:'1-1'},
+{id:'interpreter',name:'解释程序',g:'concept',r:20,page:'ch1',sub:'1-1'},
+{id:'phases',name:'五阶段',g:'concept',r:22,page:'ch1',sub:'1-2'},
+{id:'lexical',name:'词法分析',g:'concept',r:20,page:'ch1',sub:'1-2'},
+{id:'syntax',name:'语法分析',g:'concept',r:20,page:'ch1',sub:'1-2'},
+{id:'semantic',name:'语义分析',g:'concept',r:20,page:'ch1',sub:'1-2'},
+{id:'icode',name:'中间代码',g:'concept',r:20,page:'ch1',sub:'1-2'},
+{id:'optimize',name:'代码优化',g:'concept',r:20,page:'ch1',sub:'1-2'},
+{id:'tcode',name:'目标代码',g:'concept',r:20,page:'ch1',sub:'1-2'},
+{id:'symtab',name:'符号表',g:'concept',r:20,page:'ch1',sub:'1-2'},
+{id:'errhandle',name:'出错处理',g:'concept',r:20,page:'ch1',sub:'1-2'},
+{id:'frontend',name:'前端',g:'concept',r:20,page:'ch1',sub:'1-3'},
+{id:'backend',name:'后端',g:'concept',r:20,page:'ch1',sub:'1-3'},
+{id:'pass',name:'遍/趟',g:'concept',r:18,page:'ch1',sub:'1-4'},
+{id:'selfhost',name:'自展法',g:'algorithm',r:18,page:'ch1',sub:'1-4'},
+{id:'cross',name:'交叉编译',g:'concept',r:18,page:'ch1',sub:'1-4'},
+// Ch3 concepts
+{id:'token',name:'Token/单词',g:'concept',r:22,page:'ch3',sub:'3-1'},
+{id:'pattern',name:'模式/构词规则',g:'concept',r:20,page:'ch3',sub:'3-1'},
+{id:'alphabet',name:'字母表',g:'concept',r:18,page:'ch3',sub:'3-2'},
+{id:'string',name:'符号串',g:'concept',r:18,page:'ch3',sub:'3-2'},
+{id:'regex',name:'正规表达式',g:'concept',r:26,page:'ch3',sub:'3-2'},
+{id:'rset',name:'正规集',g:'concept',r:20,page:'ch3',sub:'3-2'},
+{id:'closure-k',name:'Kleene闭包',g:'concept',r:18,page:'ch3',sub:'3-2'},
+{id:'dfa',name:'DFA',g:'concept',r:24,page:'ch3',sub:'3-3'},
+{id:'nfa',name:'NFA',g:'concept',r:24,page:'ch3',sub:'3-3'},
+{id:'subset',name:'子集法',g:'algorithm',r:20,page:'ch3',sub:'3-4'},
+{id:'eclosure',name:'ε-closure',g:'concept',r:18,page:'ch3',sub:'3-4'},
+{id:'moveset',name:'moveset',g:'concept',r:18,page:'ch3',sub:'3-4'},
+{id:'minimize',name:'DFA最小化',g:'algorithm',r:22,page:'ch3',sub:'3-5'},
+{id:'dead',name:'死状态',g:'concept',r:16,page:'ch3',sub:'3-5'},
+{id:'equiv',name:'状态等价',g:'concept',r:18,page:'ch3',sub:'3-5'},
+{id:'elimin',name:'消结法',g:'algorithm',r:18,page:'ch3',sub:'3-6'},
+{id:'thompson',name:'Thompson构造',g:'algorithm',r:20,page:'ch3',sub:'3-6'},
+{id:'lexer',name:'词法分析器',g:'concept',r:22,page:'ch3',sub:'3-7'},
+{id:'table-driven',name:'表驱动型',g:'concept',r:18,page:'ch3',sub:'3-7'},
+{id:'direct-enc',name:'直接编码型',g:'concept',r:18,page:'ch3',sub:'3-7'},
+{id:'lex',name:'LEX工具',g:'tool',r:20,page:'ch3',sub:'3-7'},
+// Ch4 concepts
+{id:'grammar',name:'文法',g:'concept',r:26,page:'ch4',sub:'4-1'},
+{id:'cfg',name:'CFG上下文\n无关文法',g:'concept',r:26,page:'ch4',sub:'4-3'},
+{id:'rg',name:'正规文法',g:'concept',r:20,page:'ch4',sub:'4-3'},
+{id:'chomsky',name:'Chomsky\n层次',g:'concept',r:24,page:'ch4',sub:'4-3'},
+{id:'derive',name:'推导',g:'concept',r:20,page:'ch4',sub:'4-4'},
+{id:'reduce',name:'归约',g:'concept',r:20,page:'ch4',sub:'4-4'},
+{id:'sentform',name:'句型',g:'concept',r:18,page:'ch4',sub:'4-4'},
+{id:'sentence',name:'句子',g:'concept',r:18,page:'ch4',sub:'4-4'},
+{id:'language',name:'语言L(G)',g:'concept',r:20,page:'ch4',sub:'4-4'},
+{id:'parsetree',name:'语法树',g:'concept',r:22,page:'ch4',sub:'4-5'},
+{id:'leftmost',name:'最左推导',g:'concept',r:18,page:'ch4',sub:'4-5'},
+{id:'rightmost',name:'最右推导',g:'concept',r:18,page:'ch4',sub:'4-5'},
+{id:'ambiguous',name:'二义性',g:'concept',r:20,page:'ch4',sub:'4-5'},
+{id:'dangling',name:'悬挂else',g:'concept',r:18,page:'ch4',sub:'4-5'},
+{id:'lrec',name:'左递归',g:'concept',r:20,page:'ch4',sub:'4-6'},
+{id:'lfactor',name:'公共左因子',g:'concept',r:20,page:'ch4',sub:'4-6'},
+{id:'recdesc',name:'递归下降',g:'algorithm',r:20,page:'ch4',sub:'4-6'},
+{id:'first',name:'FIRST集',g:'set',r:20,page:'ch4',sub:'4-7'},
+{id:'follow',name:'FOLLOW集',g:'set',r:20,page:'ch4',sub:'4-7'},
+{id:'predict',name:'PREDICT集',g:'set',r:20,page:'ch4',sub:'4-7'},
+{id:'ll1',name:'LL(1)文法',g:'algorithm',r:22,page:'ch4',sub:'4-7'},
+{id:'phrase',name:'短语',g:'concept',r:18,page:'ch4',sub:'4-8'},
+{id:'handle',name:'句柄',g:'concept',r:20,page:'ch4',sub:'4-8'},
+{id:'shiftred',name:'移进-归约',g:'algorithm',r:20,page:'ch4',sub:'4-8'},
+{id:'lr0',name:'LR(0)',g:'algorithm',r:22,page:'ch4',sub:'4-9'},
+{id:'slr1',name:'SLR(1)',g:'algorithm',r:22,page:'ch4',sub:'4-9'},
+{id:'lr1',name:'LR(1)',g:'algorithm',r:20,page:'ch4',sub:'4-9'},
+{id:'lalr',name:'LALR(1)',g:'algorithm',r:20,page:'ch4',sub:'4-9'},
+{id:'item',name:'LR(0)项目',g:'concept',r:18,page:'ch4',sub:'4-9'},
+{id:'closure_lr',name:'闭包运算',g:'concept',r:18,page:'ch4',sub:'4-9'},
+{id:'goto',name:'GOTO函数',g:'concept',r:18,page:'ch4',sub:'4-9'},
+{id:'yacc',name:'YACC工具',g:'tool',r:20,page:'ch4',sub:'4-10'},
+];
+
+const GRAPH_LINKS=[
+// Chapter grouping
+{source:'ch1',target:'compiler',v:3},{source:'ch1',target:'interpreter',v:3},{source:'ch1',target:'phases',v:3},
+{source:'ch3',target:'token',v:3},{source:'ch3',target:'regex',v:3},{source:'ch3',target:'dfa',v:3},{source:'ch3',target:'nfa',v:3},{source:'ch3',target:'lexer',v:3},
+{source:'ch4',target:'grammar',v:3},{source:'ch4',target:'cfg',v:3},{source:'ch4',target:'chomsky',v:3},{source:'ch4',target:'ll1',v:3},{source:'ch4',target:'lr0',v:3},
+// Phase decomposition
+{source:'phases',target:'lexical',v:2},{source:'phases',target:'syntax',v:2},{source:'phases',target:'semantic',v:2},
+{source:'phases',target:'icode',v:2},{source:'phases',target:'optimize',v:2},{source:'phases',target:'tcode',v:2},
+{source:'phases',target:'symtab',v:2},{source:'phases',target:'errhandle',v:2},
+{source:'frontend',target:'lexical',v:2},{source:'frontend',target:'syntax',v:2},{source:'frontend',target:'icode',v:2},
+{source:'backend',target:'optimize',v:2},{source:'backend',target:'tcode',v:2},
+// Ch3 flow
+{source:'token',target:'pattern',v:2},{source:'pattern',target:'regex',v:3},{source:'alphabet',target:'string',v:2},
+{source:'string',target:'closure-k',v:2},{source:'closure-k',target:'regex',v:2},
+{source:'regex',target:'rset',v:2},{source:'regex',target:'nfa',v:3},{source:'regex',target:'dfa',v:1},
+{source:'nfa',target:'dfa',v:3},{source:'nfa',target:'subset',v:2},{source:'subset',target:'eclosure',v:3},
+{source:'subset',target:'moveset',v:3},{source:'dfa',target:'minimize',v:3},
+{source:'minimize',target:'dead',v:2},{source:'minimize',target:'equiv',v:2},
+{source:'nfa',target:'elimin',v:2},{source:'regex',target:'thompson',v:2},{source:'thompson',target:'nfa',v:2},
+{source:'dfa',target:'lexer',v:3},{source:'lexer',target:'table-driven',v:2},{source:'lexer',target:'direct-enc',v:2},
+{source:'lexer',target:'lex',v:2},{source:'lex',target:'dfa',v:1},
+// Ch4 flow
+{source:'grammar',target:'cfg',v:3},{source:'cfg',target:'rg',v:2},{source:'cfg',target:'chomsky',v:2},
+{source:'grammar',target:'derive',v:3},{source:'derive',target:'reduce',v:2},
+{source:'derive',target:'sentform',v:2},{source:'sentform',target:'sentence',v:2},{source:'sentence',target:'language',v:2},
+{source:'derive',target:'parsetree',v:2},{source:'parsetree',target:'leftmost',v:2},{source:'parsetree',target:'rightmost',v:2},
+{source:'parsetree',target:'ambiguous',v:3},{source:'ambiguous',target:'dangling',v:2},
+{source:'cfg',target:'lrec',v:2},{source:'cfg',target:'lfactor',v:2},
+{source:'lrec',target:'recdesc',v:2},{source:'recdesc',target:'ll1',v:2},
+{source:'ll1',target:'first',v:3},{source:'ll1',target:'follow',v:3},{source:'ll1',target:'predict',v:3},
+{source:'first',target:'follow',v:1},{source:'follow',target:'predict',v:2},
+{source:'reduce',target:'phrase',v:2},{source:'phrase',target:'handle',v:3},
+{source:'handle',target:'shiftred',v:3},{source:'shiftred',target:'lr0',v:2},
+{source:'lr0',target:'slr1',v:3},{source:'slr1',target:'lr1',v:2},{source:'lr1',target:'lalr',v:2},
+{source:'lr0',target:'item',v:3},{source:'item',target:'closure_lr',v:2},{source:'item',target:'goto',v:2},
+{source:'lr0',target:'yacc',v:1},{source:'slr1',target:'yacc',v:1},
+// Cross links
+{source:'lexical',target:'lexer',v:2},{source:'syntax',target:'ll1',v:2},{source:'syntax',target:'lr0',v:2},
+{source:'regex',target:'rg',v:1},{source:'dfa',target:'rg',v:1},
+];
+
+function renderGraph(){
+const container=document.getElementById('graph-container');
+if(!container) return;
+const w=container.clientWidth, h=container.clientHeight;
+const svg=d3.select('#knowledge-graph').attr('width',w).attr('height',h);
+svg.selectAll('*').remove();
+const g=svg.append('g');
+svg.call(d3.zoom().on('zoom',e=>g.attr('transform',e.transform)));
+
+const colors={chapter:'var(--primary)',concept:'var(--accent)',algorithm:'var(--warning)',tool:'var(--danger)',set:'var(--purple)'};
+
+const sim=d3.forceSimulation(GRAPH_NODES)
+.force('link',d3.forceLink(GRAPH_LINKS).id(d=>d.id).distance(d=>d.v===3?55:d.v===2?80:120))
+.force('charge',d3.forceManyBody().strength(-350))
+.force('center',d3.forceCenter(w/2,h/2))
+.force('collision',d3.forceCollide().radius(d=>d.r+10));
+
+const link=g.append('g').selectAll('line').data(GRAPH_LINKS).enter().append('line')
+.attr('stroke','#94a3b8').attr('stroke-opacity',.5).attr('stroke-width',d=>d.v);
+
+const node=g.append('g').selectAll('.node').data(GRAPH_NODES).enter().append('g')
+.attr('class','node').style('cursor','pointer')
+.call(d3.drag().on('start',(e,d)=>{if(!e.active)sim.alphaTarget(.3).restart();d.fx=d.x;d.fy=d.y;})
+.on('drag',(e,d)=>{d.fx=e.x;d.fy=e.y;})
+.on('end',(e,d)=>{if(!e.active)sim.alphaTarget(0);d.fx=null;d.fy=null;}));
+
+node.append('circle').attr('r',d=>d.r).attr('fill',d=>colors[d.g]).attr('stroke','#fff').attr('stroke-width',2.5);
+
+node.append('text').attr('dy',d=>d.r+13).text(d=>d.name).attr('text-anchor','middle').style('font-size','11px').style('font-weight','600').style('fill','#334155');
+
+// Click handler
+node.on('click',(e,d)=>{
+  if(d.page&&d.sub){
+    showSubpage(d.page,d.sub);
+  }
+}).on('mouseenter',(e,d)=>{
+  const tt=document.getElementById('tooltip');
+  tt.innerHTML=`<strong>${d.name.replace(/\\n/g,' ')}</strong><br/><span style="opacity:.8;font-size:.75rem">点击查看详细知识点</span>`;
+  tt.style.left=(e.pageX+12)+'px';tt.style.top=(e.pageY-10)+'px';tt.classList.add('visible');
+}).on('mousemove',(e,d)=>{
+  const tt=document.getElementById('tooltip');
+  tt.style.left=(e.pageX+12)+'px';tt.style.top=(e.pageY-10)+'px';
+}).on('mouseleave',()=>{
+  document.getElementById('tooltip').classList.remove('visible');
+});
+
+sim.on('tick',()=>{
+  link.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
+  node.attr('transform',d=>`translate(${d.x},${d.y})`);
+});
+}
+
+// ============ INITIALIZE ============
+renderSidebar();
+showPage('graph');
+</script>
+<!-- Content will be loaded from content.js -->
+<script src="content.js"></script>
+</body>
+</html>
